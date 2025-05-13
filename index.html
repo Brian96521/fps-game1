@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FPS Game</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    
+    #start-screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://source.unsplash.com/random/1920x1080/?space') center/cover no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 100;
+    }
+    
+    #game-title {
+      font-size: 48px;
+      margin-bottom: 30px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    
+    #start-button {
+      padding: 20px 40px;
+      font-size: 24px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    #start-button:hover {
+      background-color: #218838;
+      transform: scale(1.05);
+    }
+    
+    #instructions {
+      margin-top: 30px;
+      text-align: center;
+      max-width: 600px;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+    }
+    
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="start-screen">
+    <h1 id="game-title">FPS SHOOTER</h1>
+    <button id="start-button">Start Game</button>
+    <div id="instructions">
+      <p>使用滑鼠移動視角，點擊進行射擊</p>
+      <p>擊敗所有紅色立方體敵人以獲得勝利</p>
+      <p>按下 ESC 鍵可以暫停遊戲</p>
+    </div>
+  </div>
+  
+  <script type="module">
+    import { startGame } from './main.js';
+
+    document.getElementById('start-button').addEventListener('click', () => {
+      document.getElementById('start-screen').style.display = 'none';
+      startGame();
+    });
+  </script>
+</body>
+</html>
