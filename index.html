@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FPS Game</title>
+  <link rel="icon" href="data:,"> <!-- 防止favicon 404错误 -->
   <style>
     body, html {
       margin: 0;
@@ -75,12 +76,24 @@
     </div>
   </div>
   
-  <script type="module">
-    import { startGame } from './main.js';
-
-    document.getElementById('start-button').addEventListener('click', () => {
-      document.getElementById('start-screen').style.display = 'none';
-      startGame();
+  <!-- 直接引入THREE.js和PointerLockControls，避免CDN问题 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/examples/js/controls/PointerLockControls.js"></script>
+  
+  <script>
+    // 确保THREE先加载完成
+    window.addEventListener('load', () => {
+      import('./main.js')
+        .then(module => {
+          document.getElementById('start-button').addEventListener('click', () => {
+            document.getElementById('start-screen').style.display = 'none';
+            module.startGame();
+          });
+        })
+        .catch(error => {
+          console.error('Error loading main.js:', error);
+          alert('加载游戏失败，请刷新页面重试');
+        });
     });
   </script>
 </body>

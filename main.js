@@ -1,6 +1,3 @@
-import * as THREE from 'https://cdn.skypack.dev/three@0.152.2';
-import { PointerLockControls } from 'https://cdn.skypack.dev/three/examples/jsm/controls/PointerLockControls.js';
-
 let scene, camera, renderer, controls;
 let bullets = [];
 let enemies = [];
@@ -32,7 +29,8 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  controls = new PointerLockControls(camera, document.body);
+  // 现在使用全局THREE对象里的PointerLockControls
+  controls = new THREE.PointerLockControls(camera, document.body);
 
   // 添加環境光和平行光以提升視覺效果
   const ambientLight = new THREE.AmbientLight(0x404040);
