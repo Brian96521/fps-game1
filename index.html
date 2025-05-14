@@ -3,82 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FPS Game</title>
-  <link rel="icon" href="data:,"> <!-- 防止favicon 404错误 -->
+  <title>FPS 3v3 團隊死鬥</title>
   <style>
     body, html {
       margin: 0;
       padding: 0;
-      width: 100%;
       height: 100%;
-      background-color: black;
-      color: white;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
-    }
-    
-    #start-screen {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://source.unsplash.com/random/1920x1080/?space') center/cover no-repeat;
+      background: #000;
+      color: #fff;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       flex-direction: column;
-      z-index: 100;
+      font-family: sans-serif;
     }
-    
-    #game-title {
-      font-size: 48px;
-      margin-bottom: 30px;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    }
-    
-    #start-button {
-      padding: 20px 40px;
+    #start {
+      padding: 16px 32px;
       font-size: 24px;
-      background-color: #28a745;
-      color: white;
+      background: #28a745;
       border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    
-    #start-button:hover {
-      background-color: #218838;
-      transform: scale(1.05);
-    }
-    
-    #instructions {
-      margin-top: 30px;
-      text-align: center;
-      max-width: 600px;
-      padding: 20px;
-      background-color: rgba(0, 0, 0, 0.5);
       border-radius: 10px;
+      cursor: pointer;
     }
-    
     canvas {
-      display: block;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div id="start-screen">
-    <h1 id="game-title">FPS SHOOTER</h1>
-    <button id="start-button">Start Game</button>
-    <div id="instructions">
-      <p>使用滑鼠移動視角，點擊進行射擊</p>
-      <p>擊敗所有紅色立方體敵人以獲得勝利</p>
-      <p>按下 ESC 鍵可以暫停遊戲</p>
-    </div>
-  </div>
-  
-  <!-- 使用一个脚本来处理游戏逻辑，不再使用模块化导入 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
-  <script src="main.js"></script>
+  <h1>FPS 團隊死鬥</h1>
+  <button id="start">Start</button>
+  <script type="module">
+    import init from './main.js';
+    document.getElementById('start').addEventListener('click', () => {
+      document.querySelector('canvas')?.remove();
+      document.body.innerHTML = '';
+      init();
+    });
+  </script>
 </body>
 </html>
