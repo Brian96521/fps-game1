@@ -3,43 +3,193 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FPS 3v3 團隊死鬥</title>
+  <title>3v3 Team Deathmatch FPS</title>
+  <link rel="icon" href="data:,">
   <style>
     body, html {
       margin: 0;
       padding: 0;
+      width: 100%;
       height: 100%;
-      background: #000;
-      color: #fff;
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    
+    #start-screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/api/placeholder/1920/1080') center/cover no-repeat;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       flex-direction: column;
-      font-family: sans-serif;
+      z-index: 100;
     }
-    #start {
-      padding: 16px 32px;
+    
+    #game-title {
+      font-size: 48px;
+      margin-bottom: 30px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    
+    #start-button {
+      padding: 20px 40px;
       font-size: 24px;
-      background: #28a745;
+      background-color: #28a745;
+      color: white;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
+      transition: all 0.3s ease;
     }
-    canvas {
+    
+    #start-button:hover {
+      background-color: #218838;
+      transform: scale(1.05);
+    }
+    
+    #instructions {
+      margin-top: 30px;
+      text-align: center;
+      max-width: 600px;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+    }
+    
+    #hud {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    #score-display {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    #team-scores {
+      position: absolute;
+      top: 60px;
+      left: 20px;
+      font-size: 20px;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    #health-display {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      font-size: 24px;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    #ammo-display {
+      position: absolute;
+      bottom: 60px;
+      left: 20px;
+      font-size: 20px;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    #respawn-info {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      text-align: center;
       display: none;
+    }
+
+    #crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      text-align: center;
+      user-select: none;
+    }
+    
+    canvas {
+      display: block;
+    }
+
+    #game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      display: none;
+      z-index: 100;
+    }
+
+    #game-over h2 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    #game-over button {
+      padding: 15px 30px;
+      font-size: 24px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #game-over button:hover {
+      background-color: #218838;
+      transform: scale(1.05);
     }
   </style>
 </head>
 <body>
-  <h1>FPS 團隊死鬥</h1>
-  <button id="start">Start</button>
-  <script type="module">
-    import init from './main.js';
-    document.getElementById('start').addEventListener('click', () => {
-      document.querySelector('canvas')?.remove();
-      document.body.innerHTML = '';
-      init();
-    });
-  </script>
+  <div id="start-screen">
+    <h1 id="game-title">3v3 TEAM DEATHMATCH</h1>
+    <button id="start-button">Start Game</button>
+    <div id="instructions">
+      <p>使用 WASD 鍵移動角色</p>
+      <p>使用滑鼠控制視角，滑鼠左鍵射擊</p>
+      <p>藍隊 (你+2隊友) vs 紅隊 (3敵人)</p>
+      <p>打死後 3 秒復活，先達到 50 分的隊伍獲勝</p>
+      <p>按下 ESC 鍵可以暫停遊戲</p>
+    </div>
+  </div>
+
+  <div id="hud">
+    <div id="score-display">Score: 0</div>
+    <div id="team-scores">Blue Team: 0 | Red Team: 0</div>
+    <div id="health-display">Health: 100</div>
+    <div id="ammo-display">Ammo: 30/90</div>
+    <div id="respawn-info"></div>
+    <div id="crosshair">+</div>
+  </div>
+
+  <div id="game-over">
+    <h2 id="result-text">Victory!</h2>
+    <p id="final-score">Blue Team: 50 | Red Team: 30</p>
+    <button id="restart-button">Play Again</button>
+  </div>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
