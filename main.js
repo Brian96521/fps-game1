@@ -1,4 +1,20 @@
-// 游戏全局变量
+// 检测子弹击中
+function checkBulletHits() {
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const bullet = bullets[i];
+    
+    // 减少子弹生存时间
+    bullet.ttl--;
+    if (bullet.ttl <= 0) {
+      scene.remove(bullet);
+      bullets.splice(i, 1);
+      continue;
+    }
+    
+    // 更新子弹位置
+    bullet.position.add(bullet.velocity);
+    
+    // 检查子弹与障碍物碰// 游戏全局变量
 let scene, camera, renderer, controls;
 let bullets = [];
 let blueTeam = []; // 玩家的队 (蓝队)
@@ -9,12 +25,17 @@ let redScore = 0;
 let isGameStarted = false;
 let playerCharacter; // 存储玩家角色的引用
 let maxScore = 50;
-let scoreElement;
 let gameInitialized = false;
 let playerCollisionBox; // 玩家的碰撞盒
 let playerIsDead = false;
 let respawnTime = 3000; // 复活时间(毫秒)
 let playerRespawnTimeout;
+let playerHealth = 100;
+let ammo = 30;
+let maxAmmo = 90;
+
+// DOM元素引用
+let scoreDisplay, teamScoresDisplay, healthDisplay, ammoDisplay, respawnInfoDisplay;
 
 // 键盘控制相关
 const keyStates = {};
@@ -22,16 +43,44 @@ const moveSpeed = 0.15;
 
 // 等待页面加载完成后执行
 document.addEventListener('DOMContentLoaded', function() {
+  // 获取DOM元素引用
+  scoreDisplay = document.getElementById('score-display');
+  teamScoresDisplay = document.getElementById('team-scores');
+  healthDisplay = document.getElementById('health-display');
+  ammoDisplay = document.getElementById('ammo-display');
+  respawnInfoDisplay = document.getElementById('respawn-info');
+
   // 添加开始按钮的事件监听器
   document.getElementById('start-button').addEventListener('click', function() {
     document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('hud').style.display = 'block';
     startGame();
+  });
+
+  // 添加重新开始按钮的事件监听器
+  document.getElementById('restart-button').addEventListener('click', function() {
+    location.reload();
   });
 });
 
 // 开始游戏的函数
 function startGame() {
+  // 强制解锁控制（以防之前的游戏未正确结束）
+  try {
+    if (controls && controls.isLocked) {
+      controls.unlock();
+    }
+  } catch (e) {}
+
+  // 初始化游戏
   init();
+
+  // 请求指针锁定
+  renderer.domElement.addEventListener('click', function() {
+    if (!isGameStarted && !playerIsDead) {
+      controls.lock();
+    }
+  });
 }
 
 // 创建角色
@@ -104,16 +153,8 @@ function init() {
   if (gameInitialized) return; // 防止重複初始化
   gameInitialized = true;
   
-  // 創建得分顯示
-  scoreElement = document.createElement('div');
-  scoreElement.style.position = 'absolute';
-  scoreElement.style.top = '20px';
-  scoreElement.style.left = '20px';
-  scoreElement.style.fontSize = '24px';
-  scoreElement.style.color = 'white';
-  scoreElement.style.fontFamily = 'Arial, sans-serif';
-  scoreElement.textContent = `蓝队: ${blueScore} | 红队: ${redScore}`;
-  document.body.appendChild(scoreElement);
+  // 更新HUD显示
+  updateHUD();
 
   // 初始化场景
   scene = new THREE.Scene();
@@ -194,30 +235,57 @@ function init() {
   // 创建十字准心
   createCrosshair();
 
-  // 键盘事件监听
-  document.addEventListener('keydown', function(event) {
-    keyStates[event.code] = true;
-  });
-  
-  document.addEventListener('keyup', function(event) {
-    keyStates[event.code] = false;
-  });
-  
   // 射击和指针锁定事件
   controls.addEventListener('lock', function() {
     isGameStarted = true;
+    document.getElementById('crosshair').style.display = 'block';
   });
 
   controls.addEventListener('unlock', function() {
     isGameStarted = false;
+    if (blueScore < maxScore && redScore < maxScore) {
+      document.getElementById('crosshair').style.display = 'none';
+    }
   });
 
   document.addEventListener('click', function() {
-    if (!isGameStarted) {
-      controls.lock();
-    } else if (!playerIsDead) {
+    if (isGameStarted && !playerIsDead && ammo > 0) {
       shoot(playerCharacter);
+      ammo--;
+      updateHUD();
+      
+      // 如果弹药用完，3秒后自动补充
+      if (ammo === 0 && maxAmmo > 0) {
+        setTimeout(() => {
+          const reloadAmount = Math.min(30, maxAmmo);
+          ammo = reloadAmount;
+          maxAmmo -= reloadAmount;
+          updateHUD();
+        }, 3000);
+      }
     }
+  });
+
+  // 键盘事件监听
+  document.addEventListener('keydown', function(event) {
+    keyStates[event.code] = true;
+    
+    // ESC键暂停游戏
+    if (event.code === 'Escape' && isGameStarted) {
+      controls.unlock();
+    }
+    
+    // R键换弹
+    if (event.code === 'KeyR' && ammo < 30 && maxAmmo > 0) {
+      const reloadAmount = Math.min(30 - ammo, maxAmmo);
+      ammo += reloadAmount;
+      maxAmmo -= reloadAmount;
+      updateHUD();
+    }
+  });
+  
+  document.addEventListener('keyup', function(event) {
+    keyStates[event.code] = false;
   });
 
   // 适应窗口大小变化
@@ -457,9 +525,18 @@ function shoot(character) {
   // playSound('shoot');
 }
 
-// 更新得分
+// 更新分数
 function updateScore() {
-  scoreElement.textContent = `蓝队: ${blueScore} | 红队: ${redScore}`;
+  blueScore = Math.max(0, blueScore);
+  redScore = Math.max(0, redScore);
+  updateHUD();
+  
+  // 检查是否达到胜利条件
+  if (blueScore >= maxScore) {
+    gameOver('blue');
+  } else if (redScore >= maxScore) {
+    gameOver('red');
+  }
 }
 
 // 响应角色死亡
@@ -469,25 +546,20 @@ function characterDeath(character) {
   
   if (character.isPlayer) {
     playerIsDead = true;
+    playerHealth = 0;
+    updateHUD();
     
-    // 玩家死亡信息
-    const deathInfo = document.createElement('div');
-    deathInfo.style.position = 'absolute';
-    deathInfo.style.top = '50%';
-    deathInfo.style.left = '50%';
-    deathInfo.style.transform = 'translate(-50%, -50%)';
-    deathInfo.style.fontSize = '36px';
-    deathInfo.style.color = 'red';
-    deathInfo.style.textShadow = '2px 2px 4px #000000';
-    deathInfo.id = 'death-info';
-    deathInfo.textContent = '你已阵亡! 复活中...';
-    document.body.appendChild(deathInfo);
+    // 显示死亡信息
+    respawnInfoDisplay.textContent = '你已阵亡! 复活中...';
+    respawnInfoDisplay.style.display = 'block';
     
     // 设置玩家复活计时器
     playerRespawnTimeout = setTimeout(() => {
       respawnCharacter(character);
       playerIsDead = false;
-      document.getElementById('death-info').remove();
+      playerHealth = 100;
+      updateHUD();
+      respawnInfoDisplay.style.display = 'none';
     }, respawnTime);
   } else {
     // 设置AI角色复活计时器
@@ -525,47 +597,28 @@ function respawnCharacter(character) {
 
 // 游戏结束处理
 function gameOver(winningTeam) {
-  const gameOverDiv = document.createElement('div');
-  gameOverDiv.style.position = 'absolute';
-  gameOverDiv.style.top = '50%';
-  gameOverDiv.style.left = '50%';
-  gameOverDiv.style.transform = 'translate(-50%, -50%)';
-  gameOverDiv.style.fontSize = '48px';
-  gameOverDiv.style.color = 'white';
-  gameOverDiv.style.background = 'rgba(0, 0, 0, 0.7)';
-  gameOverDiv.style.padding = '20px';
-  gameOverDiv.style.borderRadius = '10px';
-  gameOverDiv.style.textAlign = 'center';
-  
-  if (winningTeam === 'blue') {
-    gameOverDiv.textContent = '蓝队胜利!';
-    gameOverDiv.style.borderColor = 'blue';
-    if (playerCharacter.team === 'blue') {
-      gameOverDiv.textContent += ' 你赢了!';
-    }
-  } else {
-    gameOverDiv.textContent = '红队胜利!';
-    gameOverDiv.style.borderColor = 'red';
-    if (playerCharacter.team === 'blue') {
-      gameOverDiv.textContent += ' 你输了!';
-    }
+  // 解锁指针
+  if (controls && controls.isLocked) {
+    controls.unlock();
   }
   
-  const restartButton = document.createElement('button');
-  restartButton.textContent = '再来一局';
-  restartButton.style.display = 'block';
-  restartButton.style.margin = '20px auto 0';
-  restartButton.style.padding = '10px 20px';
-  restartButton.style.fontSize = '20px';
-  restartButton.style.cursor = 'pointer';
-  restartButton.addEventListener('click', function() {
-    location.reload();
-  });
+  // 更新游戏结束画面
+  const resultText = document.getElementById('result-text');
+  const finalScore = document.getElementById('final-score');
   
-  gameOverDiv.appendChild(restartButton);
-  document.body.appendChild(gameOverDiv);
+  if (winningTeam === 'blue') {
+    resultText.textContent = '胜利!';
+    resultText.style.color = '#4da6ff';
+  } else {
+    resultText.textContent = '失败!';
+    resultText.style.color = '#ff4d4d';
+  }
   
-  controls.unlock();
+  finalScore.textContent = `蓝队: ${blueScore} | 红队: ${redScore}`;
+  
+  // 显示游戏结束界面
+  document.getElementById('game-over').style.display = 'block';
+  document.getElementById('crosshair').style.display = 'none';
 }
 
 // 更新AI角色
